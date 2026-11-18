@@ -13,10 +13,12 @@ export default async function StudioLayout({ children }: LayoutProps<"/studio">)
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-8">
           <Link href="/studio" className="flex items-baseline gap-3">
             <span className="font-display text-2xl leading-none">{site.shortName}</span>
-            <span className="eyebrow">Studio</span>
+            <span className="eyebrow hidden min-[420px]:inline">Studio</span>
           </Link>
           <nav className="flex items-center gap-1 text-sm">
-            <Link href="/" className="rounded-full px-3 py-2 text-mute transition-colors hover:text-paper">View site</Link>
+            <Link href="/studio" className="rounded-full px-3 py-2 text-mute transition-colors hover:text-paper">Library</Link>
+            <Link href="/studio/albums" className="rounded-full px-3 py-2 text-mute transition-colors hover:text-paper">Albums</Link>
+            <Link href="/" className="hidden rounded-full px-3 py-2 text-mute transition-colors hover:text-paper sm:block">View site</Link>
             <form action={signOut}>
               <button className="rounded-full px-3 py-2 text-mute transition-colors hover:text-paper">Sign out</button>
             </form>

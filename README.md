@@ -7,7 +7,7 @@ editing, sharing and framed previews that buyers can enquire about.
 It's one web app that works on phones and desktops. On your phone, open the site and
 choose **Add to Home Screen** to use the studio like an app.
 
-![Library](docs/screenshots/studio.png)
+![Public site](docs/screenshots/home.png)
 
 ## What's in step 1
 
@@ -21,6 +21,25 @@ choose **Add to Home Screen** to use the studio like an app.
   from the file. Location (GPS) is never read or stored.
 - **Library** with a storage meter against R2's free 10 GB, a photo page with download
   of the original, rename and delete.
+
+## What's in step 2
+
+- **Public portfolio** at `/`: a full-bleed hero, your public albums, and a gallery of
+  public photos. Until something is public, it shows a "coming soon" page.
+- **Three levels of sharing** for every photo and album: **Private** (only you),
+  **Link only** (anyone with the secret `/s/…` link, never listed or indexed) and
+  **Public** (shown on your site). Copy or share the link straight from the studio, and
+  make a new link if one went to the wrong person (the old one stops working).
+- **Albums**: create, add photos from your library, reorder, choose a cover, describe the
+  series. Anyone who can open an album sees every photo in it.
+- **Select many** in the library to make them public, link only or private, or add them to
+  an album in one go.
+- **Full-screen viewer**: swipe or use arrow keys, pinch, double-tap or scroll to zoom,
+  drag to pan, swipe down or Escape to close. The open photo is in the address, so links
+  can point straight at it.
+- **Link previews**: shared links show the photo, title and caption in WhatsApp,
+  iMessage and social apps.
+- Visitors only ever get the 2560 px web copy. Originals stay private.
 
 ## How it's built (and why it's cheap)
 
