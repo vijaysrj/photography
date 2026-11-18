@@ -3,5 +3,5 @@ export const site = {
   name: "Vijay Photography",
   shortName: "Vijay",
   tagline: "Light, kept.",
-  description: "Fine-art photographs, framed for your walls.",
+  description: "Fine-art photographs.",
 };
