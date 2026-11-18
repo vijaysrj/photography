@@ -41,6 +41,24 @@ choose **Add to Home Screen** to use the studio like an app.
   iMessage and social apps.
 - Visitors only ever get the 2560 px web copy. Originals stay private.
 
+## What's in step 3
+
+- **In-browser editor** (`Edit` on any photo in the studio), on phone and desktop:
+  - **Presets**: Vivid, Golden, Matte, Film, Cool, Drama, Soft, Mono, Noir, Silver, each
+    previewed on your own photo.
+  - **Light**: exposure, contrast, highlights, shadows, fade, vignette.
+  - **Colour**: warmth, tint, saturation, vibrance, black and white.
+  - **Crop**: free or fixed shapes including print ratios (4:5, 5:7, 2:3, 3:4), rotate,
+    flip and straighten. Drag the box or its corners.
+  - **Hold to compare** with the photo as shot; double-click any slider label to reset it.
+- **Non-destructive**: edits are saved as a small recipe. Your original file is never
+  changed, you can reopen the editor and carry on, or go **Back to original** any time.
+- **Download edited** renders the edited photo at full resolution as a JPEG (capped at about
+  16 MP on phones, which can't make bigger images).
+- All the image work happens on your device, so editing costs nothing to host.
+
+![Editor](docs/screenshots/editor.png)
+
 ## How it's built (and why it's cheap)
 
 | Piece | Service | Cost at small scale |

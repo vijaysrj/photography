@@ -15,6 +15,13 @@
       "when": 1794986779325,
       "tag": "0001_albums_and_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794991984413,
+      "tag": "0002_photo_edits",
+      "breakpoints": true
     }
   ]
 }
