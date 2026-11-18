@@ -8,9 +8,15 @@ import { signView } from "@/lib/storage";
 export const VARIANT_NAMES = ["thumb", "medium", "large"] as const;
 export type VariantName = (typeof VARIANT_NAMES)[number];
 
-export function variantKey(photoId: string, name: VariantName, type: string) {
+export function variantKey(photoId: string, name: VariantName, type: string, editVersion = 0) {
   const ext = type === "image/webp" ? "webp" : "jpg";
-  return `variants/${photoId}/${name}.${ext}`;
+  return editVersion ? `variants/${photoId}/e${editVersion}/${name}.${ext}` : `variants/${photoId}/${name}.${ext}`;
+}
+
+/** Shape of the photo as shown (after any crop or rotation), from its largest web copy. */
+export function displaySize(p: Photo): { width: number | null; height: number | null } {
+  const v = p.variants.large ?? p.variants.medium ?? p.variants.thumb;
+  return v ? { width: v.width, height: v.height } : { width: p.width, height: p.height };
 }
 
 export async function getUploadingPhoto(id: string): Promise<Photo> {
@@ -51,8 +57,7 @@ export async function toCard(p: Photo): Promise<PhotoCard> {
   return {
     id: p.id,
     title: p.title,
-    width: p.width,
-    height: p.height,
+    ...displaySize(p),
     color: p.dominantColor,
     visibility: p.visibility,
     thumb: await urlFor(p.variants.thumb ?? p.variants.medium),

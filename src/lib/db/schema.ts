@@ -1,3 +1,4 @@
+import type { Edits } from "@/lib/edit/types";
 import { bigint, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uuid, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const photoStatus = pgEnum("photo_status", ["uploading", "ready", "failed"]);
@@ -5,7 +6,8 @@ export const photoVisibility = pgEnum("photo_visibility", ["private", "unlisted"
 
 /** A web-sized copy generated in the browser at upload time. */
 export type Variant = { key: string; width: number; height: number; bytes: number; type: string };
-export type Variants = { thumb?: Variant; medium?: Variant; large?: Variant };
+/** `base` keeps the unedited large copy once a photo has been edited, so the editor can start from it. */
+export type Variants = { thumb?: Variant; medium?: Variant; large?: Variant; base?: Variant };
 
 /** Camera details read from the file. GPS is deliberately never stored. */
 export type PhotoExif = {
@@ -41,6 +43,10 @@ export const photos = pgTable(
     dominantColor: text("dominant_color"),
     variants: jsonb("variants").$type<Variants>().notNull().default({}),
     exif: jsonb("exif").$type<PhotoExif>().notNull().default({}),
+    /** Non-destructive edit recipe; null means shown as shot. */
+    edits: jsonb("edits").$type<Edits>(),
+    /** Bumped on every save, so edited web copies get fresh addresses (no stale caches). */
+    editVersion: integer("edit_version").notNull().default(0),
     takenAt: timestamp("taken_at", { withTimezone: true }),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -5,6 +5,7 @@ import { getPhoto } from "@/lib/photos";
 import { signView } from "@/lib/storage";
 import { bytes, megapixels, shutter } from "@/lib/format";
 import { DeleteButton } from "@/components/delete-button";
+import { EditActions } from "@/components/editor/edit-actions";
 import { ShareControls } from "@/components/share-controls";
 import { AlbumPicker } from "@/components/album-picker";
 import { albumIdsForPhoto, allAlbums, sharePath } from "@/lib/gallery";
@@ -28,6 +29,9 @@ export default async function PhotoPage({ params }: PageProps<"/studio/photos/[i
     allAlbums(),
     albumIdsForPhoto(photo.id),
   ]);
+  const base = photo.variants.base ?? (photo.editVersion === 0 ? photo.variants.large : undefined);
+  const canEdit = !!base;
+  const [originalUrl, baseUrl] = await Promise.all([signView(photo.originalKey), base ? signView(base.key) : null]);
   const path = sharePath({ kind: "photo", id: photo.id, visibility: photo.visibility, shareToken: photo.shareToken });
 
   async function changeVisibility(v: string) {
@@ -123,9 +127,16 @@ export default async function PhotoPage({ params }: PageProps<"/studio/photos/[i
         </dl>
 
         <div className="flex flex-wrap gap-3">
+          {canEdit && <Link href={`/studio/photos/${photo.id}/edit`} className="btn bg-brass text-ink hover:bg-brass-2">Edit</Link>}
           <a href={download} className="btn bg-paper text-ink hover:bg-brass-2">Download original</a>
           <DeleteButton action={deletePhoto.bind(null, photo.id)} />
         </div>
+        {photo.edits && base && (
+          <div>
+            <p className="eyebrow mb-3">Edited · the original is untouched</p>
+            <EditActions photoId={photo.id} edits={photo.edits} originalUrl={originalUrl} fallbackUrl={baseUrl!} fileName={photo.originalName} />
+          </div>
+        )}
       </aside>
     </main>
   );

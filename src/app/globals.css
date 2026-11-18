@@ -88,3 +88,27 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* Editor sliders: a thin track drawn by the component, with a round brass thumb. */
+.slider::-webkit-slider-runnable-track { height: 1.5rem; background: transparent; }
+.slider::-moz-range-track { height: 1.5rem; background: transparent; }
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: 0.25rem;
+  height: 1rem;
+  width: 1rem;
+  border-radius: 999px;
+  background: var(--color-paper);
+  box-shadow: 0 0 0 3px var(--color-ink), 0 1px 6px rgba(0, 0, 0, 0.6);
+  transition: transform 150ms;
+}
+.slider::-moz-range-thumb {
+  height: 1rem;
+  width: 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-paper);
+  box-shadow: 0 0 0 3px var(--color-ink), 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+.slider:active::-webkit-slider-thumb { transform: scale(1.25); background: var(--color-brass-2); }
