@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/*
+ * A gallery palette: warm near-black walls, paper-white type, a brass accent
+ * borrowed from picture-frame gilding. Photos should always be the brightest
+ * thing on screen.
+ */
+@theme {
+  --color-ink: #0f0e0c;
+  --color-ink-2: #171512;
+  --color-ink-3: #211e1a;
+  --color-line: #2e2a25;
+  --color-paper: #f3efe8;
+  --color-mute: #a39b8f;
+  --color-faint: #6d665c;
+  --color-brass: #c9a96e;
+  --color-brass-2: #e0c48f;
+  --color-danger: #e0796b;
+  --color-ok: #8fbf8a;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+
+  --ease-gallery: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: var(--color-brass);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brass);
+    outline-offset: 3px;
+  }
+}
+
+@utility eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-mute);
+}
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: background-color 200ms, color 200ms, border-color 200ms, transform 200ms;
+  &:active {
+    transform: scale(0.98);
+  }
+  &:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@utility animate-rise {
+  animation: rise 700ms var(--ease-gallery) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
