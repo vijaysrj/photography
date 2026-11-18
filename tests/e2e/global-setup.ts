@@ -3,12 +3,30 @@ import fs from "node:fs";
 import path from "node:path";
 
 /** Makes test photos: a 6000×4000 noisy JPEG (~20 MB, so it uploads in several parts) and a small one. */
+/** Starts each run from an empty library, but only ever against a database on this machine. */
+async function resetLocalDatabase() {
+  const { config } = await import("dotenv");
+  config({ path: [".env.local", ".env"], quiet: true });
+  const url = process.env.DATABASE_URL ?? "";
+  if (!/@(localhost|127\.0\.0\.1)[:/]/.test(url)) return;
+  const postgres = (await import("postgres")).default;
+  const sql = postgres(url, { max: 1, onnotice: () => {} });
+  await sql`truncate album_photos, albums, photos`;
+  await sql.end();
+  // The home page is cached between visits; drop the cached copy so it matches the empty database.
+  for (const f of ["index.html", "index.rsc", "index.meta", "index.segments"]) {
+    fs.rmSync(path.resolve(".next/server/app", f), { recursive: true, force: true });
+  }
+}
+
 export default async function globalSetup() {
+  await resetLocalDatabase();
   const dir = path.resolve(".e2e");
   fs.mkdirSync(dir, { recursive: true });
   const want = [
     { file: "big.jpg", w: 6000, h: 4000, q: 0.97 },
     { file: "small.jpg", w: 1200, h: 800, q: 0.9 },
+    { file: "tall.jpg", w: 800, h: 1200, q: 0.9 },
   ].filter((f) => !fs.existsSync(path.join(dir, f.file)));
   if (!want.length) return;
 

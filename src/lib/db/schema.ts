@@ -1,4 +1,4 @@
-import { bigint, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid, index } from "drizzle-orm/pg-core";
+import { bigint, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uuid, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const photoStatus = pgEnum("photo_status", ["uploading", "ready", "failed"]);
 export const photoVisibility = pgEnum("photo_visibility", ["private", "unlisted", "public"]);
@@ -26,6 +26,8 @@ export const photos = pgTable(
     description: text("description").notNull().default(""),
     status: photoStatus("status").notNull().default("uploading"),
     visibility: photoVisibility("visibility").notNull().default("private"),
+    /** Secret part of the "anyone with the link" address. Created the first time you share. */
+    shareToken: text("share_token"),
 
     originalKey: text("original_key").notNull(),
     originalName: text("original_name").notNull(),
@@ -44,7 +46,41 @@ export const photos = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("photos_created_at_idx").on(t.createdAt), index("photos_status_idx").on(t.status)],
+  (t) => [
+    index("photos_created_at_idx").on(t.createdAt),
+    index("photos_status_idx").on(t.status),
+    uniqueIndex("photos_share_token_idx").on(t.shareToken),
+  ],
 );
 
 export type Photo = typeof photos.$inferSelect;
+export type Visibility = Photo["visibility"];
+
+export const albums = pgTable(
+  "albums",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    visibility: photoVisibility("visibility").notNull().default("private"),
+    shareToken: text("share_token"),
+    coverPhotoId: uuid("cover_photo_id").references(() => photos.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("albums_slug_idx").on(t.slug), uniqueIndex("albums_share_token_idx").on(t.shareToken)],
+);
+
+export type Album = typeof albums.$inferSelect;
+
+export const albumPhotos = pgTable(
+  "album_photos",
+  {
+    albumId: uuid("album_id").notNull().references(() => albums.id, { onDelete: "cascade" }),
+    photoId: uuid("photo_id").notNull().references(() => photos.id, { onDelete: "cascade" }),
+    position: integer("position").notNull().default(0),
+    addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.albumId, t.photoId] }), index("album_photos_photo_idx").on(t.photoId)],
+);

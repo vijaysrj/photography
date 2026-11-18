@@ -3,6 +3,14 @@ import { listReadyPhotos, toCard } from "@/lib/photos";
 import { bytes } from "@/lib/format";
 import { PhotoGrid } from "@/components/photo-grid";
 import { Uploader } from "@/components/uploader";
+import { allAlbums } from "@/lib/gallery";
+import type { Visibility } from "@/lib/db/schema";
+import { addPhotosToAlbum, createAlbum, setPhotosVisibility } from "./actions";
+
+async function bulkVisibility(ids: string[], v: Visibility) {
+  "use server";
+  await setPhotosVisibility(ids, v);
+}
 
 export const metadata: Metadata = { title: "Library" };
 
@@ -10,7 +18,7 @@ const FREE_BYTES = 10 * 1024 ** 3; // R2 free allowance
 
 export default async function StudioPage() {
   const photos = await listReadyPhotos();
-  const cards = await Promise.all(photos.map(toCard));
+  const [cards, albums] = await Promise.all([Promise.all(photos.map(toCard)), allAlbums()]);
   const used = photos.reduce(
     (sum, p) => sum + p.sizeBytes + Object.values(p.variants).reduce((s, v) => s + (v?.bytes ?? 0), 0),
     0,
@@ -39,7 +47,12 @@ export default async function StudioPage() {
 
       <Uploader className="mt-10" compact={photos.length > 0} />
 
-      <PhotoGrid photos={cards} className="mt-12" />
+      <PhotoGrid
+        photos={cards}
+        className="mt-10"
+        albums={albums.map((a) => ({ id: a.id, title: a.title }))}
+        bulk={{ setVisibility: bulkVisibility, addToAlbum: addPhotosToAlbum, newAlbum: createAlbum }}
+      />
     </main>
   );
 }

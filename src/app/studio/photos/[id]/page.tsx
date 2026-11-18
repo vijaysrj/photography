@@ -5,7 +5,10 @@ import { getPhoto } from "@/lib/photos";
 import { signView } from "@/lib/storage";
 import { bytes, megapixels, shutter } from "@/lib/format";
 import { DeleteButton } from "@/components/delete-button";
-import { deletePhoto, renamePhoto } from "../../actions";
+import { ShareControls } from "@/components/share-controls";
+import { AlbumPicker } from "@/components/album-picker";
+import { albumIdsForPhoto, allAlbums, sharePath } from "@/lib/gallery";
+import { createAlbum, deletePhoto, resetPhotoLink, setPhotoInAlbum, setPhotosVisibility, updatePhotoText } from "../../actions";
 
 export async function generateMetadata({ params }: PageProps<"/studio/photos/[id]">): Promise<Metadata> {
   const photo = await getPhoto((await params).id);
@@ -18,11 +21,32 @@ export default async function PhotoPage({ params }: PageProps<"/studio/photos/[i
   if (!photo || photo.status !== "ready") notFound();
 
   const view = photo.variants.large ?? photo.variants.medium ?? photo.variants.thumb;
-  const [src, placeholder, download] = await Promise.all([
+  const [src, placeholder, download, albums, inAlbums] = await Promise.all([
     view ? signView(view.key) : null,
     photo.variants.thumb ? signView(photo.variants.thumb.key) : null,
     signView(photo.originalKey, { downloadName: photo.originalName }),
+    allAlbums(),
+    albumIdsForPhoto(photo.id),
   ]);
+  const path = sharePath({ kind: "photo", id: photo.id, visibility: photo.visibility, shareToken: photo.shareToken });
+
+  async function changeVisibility(v: string) {
+    "use server";
+    await setPhotosVisibility([id], v);
+  }
+  async function resetLink() {
+    "use server";
+    await resetPhotoLink(id);
+  }
+  async function toggleAlbum(albumId: string, on: boolean) {
+    "use server";
+    await setPhotoInAlbum(id, albumId, on);
+  }
+  async function newAlbum(form: FormData) {
+    "use server";
+    form.append("photoId", id);
+    await createAlbum(form);
+  }
   const e = photo.exif;
   const camera = [e.make && e.model && !e.model.startsWith(e.make) ? `${e.make} ${e.model}` : e.model ?? e.make, e.lens]
     .filter(Boolean)
@@ -37,7 +61,6 @@ export default async function PhotoPage({ params }: PageProps<"/studio/photos/[i
     ["Settings", settings || undefined],
     ["Original", [photo.width && photo.height ? `${photo.width} × ${photo.height}` : undefined, megapixels(photo.width, photo.height), bytes(photo.sizeBytes)].filter(Boolean).join(" · ")],
     ["File", photo.originalName],
-    ["Visibility", photo.visibility === "private" ? "Private (only you)" : photo.visibility],
   ];
 
   return (
@@ -65,7 +88,7 @@ export default async function PhotoPage({ params }: PageProps<"/studio/photos/[i
       </div>
 
       <aside className="animate-rise flex flex-col gap-8 [animation-delay:120ms] lg:pt-10">
-        <form action={renamePhoto.bind(null, photo.id)} className="group">
+        <form action={updatePhotoText.bind(null, photo.id)} className="group">
           <label htmlFor="title" className="eyebrow">Title</label>
           <input
             id="title"
@@ -74,8 +97,21 @@ export default async function PhotoPage({ params }: PageProps<"/studio/photos/[i
             placeholder="Untitled"
             className="mt-2 w-full border-b border-transparent bg-transparent pb-1 font-display text-4xl font-light outline-none transition-colors hover:border-line focus:border-brass"
           />
-          <button className="mt-2 text-xs text-brass opacity-0 transition-opacity group-focus-within:opacity-100">Save title</button>
+          <label htmlFor="description" className="sr-only">Caption</label>
+          <textarea
+            id="description"
+            name="description"
+            defaultValue={photo.description}
+            placeholder="Add a caption or the story behind it"
+            rows={2}
+            className="mt-3 w-full resize-none rounded-lg border border-transparent bg-transparent text-sm leading-relaxed text-paper/80 outline-none transition-colors placeholder:text-faint hover:border-line focus:border-brass focus:p-2"
+          />
+          <button className="mt-1 text-xs text-brass opacity-0 transition-opacity group-focus-within:opacity-100">Save</button>
         </form>
+
+        <ShareControls visibility={photo.visibility} path={path} onChange={changeVisibility} onResetLink={resetLink} />
+
+        <AlbumPicker albums={albums.map((a) => ({ id: a.id, title: a.title }))} selected={inAlbums} onToggle={toggleAlbum} onCreate={newAlbum} />
 
         <dl className="grid gap-4 text-sm">
           {details.filter(([, v]) => v).map(([k, v]) => (
@@ -90,9 +126,6 @@ export default async function PhotoPage({ params }: PageProps<"/studio/photos/[i
           <a href={download} className="btn bg-paper text-ink hover:bg-brass-2">Download original</a>
           <DeleteButton action={deletePhoto.bind(null, photo.id)} />
         </div>
-        <p className="text-xs leading-relaxed text-faint">
-          Sharing, framing previews and editing arrive in the next steps of the plan.
-        </p>
       </aside>
     </main>
   );
