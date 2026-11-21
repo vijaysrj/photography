@@ -85,11 +85,20 @@ test("photos are private until you share them, by link or publicly", async ({ pa
   await v.page.goto(`/photos/${photoId}`);
   await expect(v.page.getByRole("button", { name: "View full screen" })).toBeVisible();
 
+  // Cached pages can be served long after they were built, so they must use
+  // stable image addresses rather than storage links that expire.
+  const img = v.page.getByRole("button", { name: "View full screen" }).locator("img");
+  await expect(img).toHaveAttribute("src", new RegExp(`^/img/${photoId}/large\\?v=\\d+$`));
+  await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBeGreaterThan(0);
+
   // Back to private: gone again.
   await save(page, () => page.getByRole("radio", { name: "Private" }).click());
   await expect(share).toHaveCount(0);
   await v.page.goto(`/photos/${photoId}`);
   await expect(v.page.getByText("Nothing hangs here")).toBeVisible();
+  expect((await v.page.request.get(`/img/${photoId}/large`, { maxRedirects: 0 })).status()).toBe(404);
+  // You can still see it, signed in.
+  expect((await page.request.get(`/img/${photoId}/large`, { maxRedirects: 0 })).status()).toBe(302);
   await v.close();
 });
 

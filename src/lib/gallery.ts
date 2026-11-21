@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { Album, Photo, Visibility } from "@/lib/db/schema";
-import { signView } from "@/lib/storage";
+import { pickVariant, viewPath } from "@/lib/view-links";
 
 /**
  * Who can see what:
@@ -52,12 +52,8 @@ function showable(p: Photo) {
   return p.status === "ready" && !!(p.variants.thumb || p.variants.medium || p.variants.large);
 }
 
-export async function toGalleryPhoto(p: Photo): Promise<GalleryPhoto> {
-  const v = p.variants;
-  const thumb = (v.thumb ?? v.medium ?? v.large)!;
-  const medium = v.medium ?? v.large ?? thumb;
-  const large = v.large ?? medium;
-  const [t, m, l] = await Promise.all([signView(thumb.key), signView(medium.key), signView(large.key)]);
+export function toGalleryPhoto(p: Photo): GalleryPhoto {
+  const large = (p.variants.large ?? p.variants.medium ?? p.variants.thumb)!;
   return {
     id: p.id,
     title: p.title,
@@ -65,15 +61,15 @@ export async function toGalleryPhoto(p: Photo): Promise<GalleryPhoto> {
     width: large.width,
     height: large.height,
     color: p.dominantColor,
-    thumb: t,
-    medium: m,
-    large: l,
+    thumb: viewPath(p, "thumb"),
+    medium: viewPath(p, "medium"),
+    large: viewPath(p, "large"),
     takenAt: p.takenAt?.toISOString() ?? null,
     camera: cameraLine(p),
   };
 }
 
-export const toGalleryPhotos = (ps: Photo[]) => Promise.all(ps.filter(showable).map(toGalleryPhoto));
+export const toGalleryPhotos = async (ps: Photo[]) => ps.filter(showable).map(toGalleryPhoto);
 
 const newestFirst = [desc(schema.photos.takenAt), desc(schema.photos.createdAt)];
 
@@ -127,7 +123,7 @@ async function toAlbumCards(albums: Album[]): Promise<AlbumCard[]> {
     albums.map(async (a) => {
       const inAlbum = byAlbum.get(a.id) ?? [];
       const coverPhoto = (inAlbum.find((p) => p.id === a.coverPhotoId) ?? inAlbum[0]) as Photo | undefined;
-      const v = coverPhoto ? (coverPhoto.variants.medium ?? coverPhoto.variants.large ?? coverPhoto.variants.thumb) : undefined;
+      const v = coverPhoto ? pickVariant(coverPhoto, "medium") : undefined;
       return {
         id: a.id,
         slug: a.slug,
@@ -136,7 +132,7 @@ async function toAlbumCards(albums: Album[]): Promise<AlbumCard[]> {
         visibility: a.visibility,
         shareToken: a.shareToken,
         count: counts.find((c) => c.albumId === a.id)?.n ?? 0,
-        cover: v && coverPhoto ? { url: await signView(v.key), color: coverPhoto.dominantColor, width: v.width, height: v.height } : null,
+        cover: v && coverPhoto ? { url: viewPath(coverPhoto, "medium"), color: coverPhoto.dominantColor, width: v.width, height: v.height } : null,
       };
     }),
   );
