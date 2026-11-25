@@ -1,5 +1,5 @@
 import { canvasToBlob, downscale, loadBitmap, renderEdited } from "./render";
-import { emptyEdits, isIdentity, type Edits } from "./types";
+import { emptyEdits, isIdentity, sanitizeEdits, type Edits } from "./types";
 
 /**
  * Applies a recipe to the full-resolution original in the browser, uploads new web
@@ -22,7 +22,8 @@ export async function saveEdits(opts: {
   }
   status("Applying your edits…");
   await new Promise((r) => setTimeout(r, 30));
-  const recipe = opts.edits && !isIdentity(opts.edits) ? opts.edits : emptyEdits();
+  const edits = opts.edits ? sanitizeEdits(opts.edits) : null;
+  const recipe = edits && !isIdentity(edits) ? edits : emptyEdits();
   const large = renderEdited(bmp, bmp.width, bmp.height, recipe, { longEdge: 2560 });
   bmp.close();
   const medium = downscale(large, 1280);
@@ -53,7 +54,7 @@ export async function saveEdits(opts: {
     body: JSON.stringify({
       version: p.version,
       type,
-      edits: recipe === opts.edits ? opts.edits : null,
+      edits: recipe === edits ? edits : null,
       dominantColor,
       variants: { thumb: size(thumb), medium: size(medium), large: size(large) },
     }),
