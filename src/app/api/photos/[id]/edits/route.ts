@@ -7,14 +7,15 @@ import { ApiError, body, ownerRoute } from "@/lib/api";
 import { VARIANT_NAMES, getPhoto, variantKey } from "@/lib/photos";
 import { deleteObjects, objectSize } from "@/lib/storage";
 import { EditsSchema } from "@/lib/edit/schema";
-import { isIdentity } from "@/lib/edit/types";
+import { isIdentity, sanitizeEdits, type Edits } from "@/lib/edit/types";
 
 const VariantInfo = z.object({ width: z.number().int().positive(), height: z.number().int().positive() });
 
 const Commit = z.object({
   version: z.number().int().positive(),
   type: z.enum(["image/webp", "image/jpeg"]),
-  edits: EditsSchema.nullable(),
+  // Tidy rounding errors before checking, rather than refusing the save.
+  edits: z.preprocess((v) => (v && typeof v === "object" ? sanitizeEdits(v as Edits) : v), EditsSchema.nullable()),
   dominantColor: z.string().regex(/^#[0-9a-f]{6}$/i).nullish(),
   variants: z.object({ thumb: VariantInfo, medium: VariantInfo, large: VariantInfo }),
 });

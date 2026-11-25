@@ -51,3 +51,30 @@ describe("render sizes", () => {
     expect(straightenScale(3, 2, 5)).toBeGreaterThan(1.1);
   });
 });
+
+import { sanitizeEdits, emptyEdits } from "@/lib/edit/types";
+import { EditsSchema } from "@/lib/edit/schema";
+
+describe("sanitizeEdits", () => {
+  it("fixes rounding drift and stray values so the server accepts the save", () => {
+    const e = emptyEdits();
+    e.geometry.crop = { x: -1e-17, y: 0.2, w: 0.7000000000000001, h: 0.8000000000000002 };
+    e.geometry.rotate = 360 as never;
+    e.adjust.exposure = NaN;
+    e.adjust.contrast = 100.0000001;
+    expect(EditsSchema.safeParse(e).success).toBe(false);
+    const s = sanitizeEdits(e);
+    expect(EditsSchema.safeParse(s).success).toBe(true);
+    expect(s.geometry.crop.x).toBe(0);
+    expect(s.geometry.crop.y + s.geometry.crop.h).toBeLessThanOrEqual(1);
+    expect(s.geometry.rotate).toBe(0);
+    expect(s.adjust.exposure).toBe(0);
+  });
+
+  it("leaves a normal recipe unchanged", () => {
+    const e = emptyEdits();
+    e.adjust.warmth = 32;
+    e.geometry.crop = { x: 0.1, y: 0.1, w: 0.5, h: 0.5 };
+    expect(sanitizeEdits(e)).toEqual(e);
+  });
+});

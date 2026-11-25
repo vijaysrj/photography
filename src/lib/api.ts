@@ -18,7 +18,11 @@ export function ownerRoute<Ctx>(handler: (req: Request, ctx: Ctx) => Promise<unk
       return NextResponse.json(result ?? { ok: true });
     } catch (err) {
       if (err instanceof ApiError) return NextResponse.json({ error: err.message }, { status: err.status });
-      if (err instanceof z.ZodError) return NextResponse.json({ error: "Invalid request", issues: err.issues }, { status: 400 });
+      if (err instanceof z.ZodError) {
+        const where = err.issues.map((i) => i.path.join(".") || "body").join(", ");
+        console.warn(`Invalid request to ${new URL(req.url).pathname}: ${where}`, JSON.stringify(err.issues));
+        return NextResponse.json({ error: `Invalid request (${where})`, issues: err.issues }, { status: 400 });
+      }
       console.error(err);
       return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }

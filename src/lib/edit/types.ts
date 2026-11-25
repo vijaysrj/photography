@@ -73,3 +73,40 @@ export function isIdentity(e: Edits | null | undefined): boolean {
     c.x === 0 && c.y === 0 && c.w === 1 && c.h === 1
   );
 }
+
+const num = (v: unknown, lo: number, hi: number, fallback = 0) => {
+  const n = typeof v === "number" && Number.isFinite(v) ? v : fallback;
+  return Math.min(hi, Math.max(lo, n));
+};
+/** Crop fractions are kept to 6 decimals: far finer than a pixel, and free of float drift. */
+const frac = (v: number) => Math.round(v * 1e6) / 1e6;
+
+/**
+ * Pulls every value back into its allowed range. Dragging the crop box or
+ * stacking rotations can leave tiny rounding errors (say x = -0.00000001) or a
+ * stray NaN, which the server would otherwise reject as an invalid request.
+ */
+export function sanitizeEdits(input: Edits): Edits {
+  const e = emptyEdits();
+  const a = (input?.adjust ?? {}) as Partial<Adjustments>;
+  const g = (input?.geometry ?? {}) as Partial<Geometry>;
+  const c = (g.crop ?? {}) as Partial<CropRect>;
+  const adjust = { ...ZERO };
+  for (const k of Object.keys(ZERO) as (keyof Adjustments)[]) adjust[k] = num(a[k], k === "fade" ? 0 : -100, 100);
+  const w = frac(num(c.w, 0.01, 1, 1));
+  const h = frac(num(c.h, 0.01, 1, 1));
+  const rotation = ((Math.round(num(g.rotate, -3600, 3600) / 90) * 90) % 360 + 360) % 360;
+  return {
+    version: 1,
+    preset: typeof input?.preset === "string" ? input.preset.slice(0, 40) : null,
+    mono: !!input?.mono,
+    adjust,
+    geometry: {
+      rotate: rotation as Geometry["rotate"],
+      flipH: !!g.flipH,
+      straighten: num(g.straighten, -45, 45),
+      crop: { x: frac(num(c.x, 0, 1 - w)), y: frac(num(c.y, 0, 1 - h)), w, h },
+      aspect: typeof g.aspect === "string" ? g.aspect.slice(0, 20) : e.geometry.aspect,
+    },
+  };
+}
